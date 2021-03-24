@@ -6,7 +6,7 @@ import torch
 import torch.nn.functional as F
 
 from torch_mimicry.nets.gan import gan
-
+from torch.autograd import Variable
 
 class SSGANBaseGenerator(gan.BaseGenerator):
     r"""
@@ -231,6 +231,97 @@ class SSGANBaseDiscriminator(gan.BaseDiscriminator):
         # Compute probabilities
         D_x, D_Gz = self.compute_probs(output_real=output_real,
                                        output_fake=output_fake)
+
+        # Log statistics for D once out of loop
+        log_data.add_metric('errD', errD, group='loss')
+        log_data.add_metric('errD_SS', errD_SS, group='loss_SS')
+        log_data.add_metric('D(x)', D_x, group='prob')
+        log_data.add_metric('D(G(z))', D_Gz, group='prob')
+
+        return log_data
+    
+    def advtrain_step(self,
+                   real_batch,
+                   netG,
+                   optD,
+                   log_data,
+                   device=None,
+                   global_step=None,
+                   **kwargs):
+        r"""
+        Takes one adversarial training step for D.
+
+        Args:
+            real_batch (Tensor): A batch of real images of shape (N, C, H, W).
+            netG (nn.Module): Generator model for obtaining fake images.
+            optD (Optimizer): Optimizer for updating discriminator's parameters.
+            device (torch.device): Device to use for running the model.
+            log_data (MetricLog): An object to add custom metrics for visualisations.
+            global_step (int): Variable to sync training, logging and checkpointing.
+                Useful for dynamic changes to model amidst training.
+
+        Returns:
+            MetricLog: Returns MetricLog object containing updated logging variables after 1 training step.
+
+        """
+        self.zero_grad()
+
+        # Produce real images
+        real_images, _ = real_batch
+        batch_size = real_images.shape[0]  # Match batch sizes for last iter
+
+        # Produce fake images
+        fake_images = netG.generate_images(num_images=batch_size,
+                                           device=device).detach()
+
+        # Compute real and fake logits for gan loss
+        output_real, _ = self.forward(real_images)
+        output_fake, _ = self.forward(fake_images)
+
+        
+        #compute the adversarial samples of real and fake images.
+        t=1
+        real_value=torch.mean(output_real)
+        fake_value=torch.mean(output_fake)
+        fake_imgs_adv=fake_images.clone()
+        real_imgs_adv=real_images.clone()
+        real_imgs_adv=Variable(real_imgs_adv,requires_grad=True)
+        fake_imgs_adv=Variable(fake_imgs_adv,requires_grad=True)
+        #real_grad=Variable(real_grad,requires_grad=True)
+        fake_output,_= self.forward(fake_imgs_adv)
+        fake_output=fake_output.mean()
+        fake_adv_loss = torch.abs(fake_output-real_value)
+        #print(fake_adv_loss)
+        #print(fake_adv_loss.requires_grad)
+        #print(fake_imgs_adv.requires_grad)
+        fake_grad=torch.autograd.grad(fake_adv_loss,fake_imgs_adv)
+        fake_imgs_adv=fake_imgs_adv-fake_grad[0].clamp(-1*t,t)
+        fake_imgs_adv=fake_imgs_adv.clamp(-1,1)
+        real_output,_= self.forward(real_imgs_adv)
+        real_output=real_output.mean()
+        real_adv_loss = torch.abs(real_output-fake_value)
+        real_grad=torch.autograd.grad(real_adv_loss,real_imgs_adv)
+        real_imgs_adv=real_imgs_adv-real_grad[0].clamp(-1*t,t)
+        real_imgs_adv=real_imgs_adv.clamp(-1,1)
+        fake_adv_validity,_= self.forward(fake_imgs_adv.detach())
+        real_adv_validity,_ = self.forward(real_imgs_adv)
+
+        # Compute GAN loss, upright images only.
+        errD = self.compute_gan_loss(output_real=real_adv_validity,
+                                     output_fake=fake_adv_validity)
+
+        # Compute SS loss, rotates the images.
+        errD_SS, _ = self.compute_ss_loss(images=real_images,
+                                          scale=self.ss_loss_scale)
+
+        # Backprop and update gradients
+        errD_total = errD + errD_SS
+        errD_total.backward()
+        optD.step()
+
+        # Compute probabilities
+        D_x, D_Gz = self.compute_probs(output_real=real_adv_validity,
+                                       output_fake=fake_adv_validity)
 
         # Log statistics for D once out of loop
         log_data.add_metric('errD', errD, group='loss')

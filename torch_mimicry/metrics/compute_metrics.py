@@ -164,8 +164,10 @@ def evaluate(metric,
                 score = compute_fid.fid_score(netG=netG,
                                               seed=seed,
                                               device=device,
+                                              split='train',
                                               log_dir=log_dir,
-                                              **kwargs)
+                                              **kwargs
+                                              )
 
             elif metric == "inception_score":
                 score, _ = compute_is.inception_score(netG=netG,
@@ -178,6 +180,7 @@ def evaluate(metric,
                 score, _ = compute_kid.kid_score(netG=netG,
                                                  device=device,
                                                  seed=seed,
+                                                 split='train',
                                                  log_dir=log_dir,
                                                  **kwargs)
 

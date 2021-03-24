@@ -35,29 +35,4 @@ if __name__ == "__main__":
                                    device=device)
     trainer.train()
 
-    # Evaluate fid
-    mmc.metrics.evaluate(metric='fid',
-                         log_dir='./log/example',
-                         netG=netG,
-                         dataset='cifar10',
-                         num_real_samples=50000,
-                         num_fake_samples=50000,
-                         evaluate_step=30,
-                         device=device)
 
-    # Evaluate kid
-    mmc.metrics.evaluate(metric='kid',
-                         log_dir='./log/example',
-                         netG=netG,
-                         dataset='cifar10',
-                         num_samples=50000,
-                         evaluate_step=30,
-                         device=device)
-
-    # Evaluate inception score
-    mmc.metrics.evaluate(metric='inception_score',
-                         log_dir='./log/example',
-                         netG=netG,
-                         num_samples=50000,
-                         evaluate_step=30,
-                         device=device)

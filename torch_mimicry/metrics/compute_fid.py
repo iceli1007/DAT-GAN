@@ -17,6 +17,7 @@ from torch_mimicry.metrics.inception_model import inception_utils
 def compute_real_dist_stats(num_samples,
                             sess,
                             batch_size,
+                            split,
                             dataset=None,
                             stats_file=None,
                             seed=0,
@@ -59,7 +60,7 @@ def compute_real_dist_stats(num_samples,
     else:
         # Obtain the numpy format data
         print("INFO: Obtaining images...")
-        images = get_dataset_images(dataset, num_samples=num_samples)
+        images = get_dataset_images(dataset, split=split,num_samples=num_samples)
 
         # Compute the mean and cov
         print("INFO: Computing statistics for real images...")
@@ -169,6 +170,7 @@ def fid_score(num_real_samples,
               netG,
               dataset,
               seed=0,
+              split='train',
               device=None,
               batch_size=50,
               verbose=True,
@@ -206,11 +208,13 @@ def fid_score(num_real_samples,
             'cifar100',
             'stl10_48',
             'imagenet_32',
+            'imagenet_64',
             'imagenet_128',
             'celeba_64',
             'celeba_128',
-            'lsun_bedroom',
+            'lsun_bedroom_128',
             'fake_data',
+            'Tiny_imagenet_64',
         }
         if dataset not in default_datasets:
             raise ValueError('For default datasets, must be one of {}'.format(
@@ -261,6 +265,7 @@ def fid_score(num_real_samples,
                                                  sess=sess,
                                                  dataset=dataset,
                                                  batch_size=batch_size,
+                                                 split=split,
                                                  verbose=verbose,
                                                  stats_file=stats_file,
                                                  log_dir=log_dir,

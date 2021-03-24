@@ -7,7 +7,7 @@ import numpy as np
 import torch
 from torch.utils.tensorboard import SummaryWriter
 from torchvision import utils as vutils
-
+from torch_mimicry.metrics import compute_fid, compute_is, compute_kid
 
 class Logger:
     """
@@ -75,6 +75,8 @@ class Logger:
             self.writers[metric].add_scalar(name,
                                             log_data[metric],
                                             global_step=global_step)
+
+
 
     def close_writers(self):
         """
@@ -208,3 +210,128 @@ class Logger:
                 self.writers['img'].add_image('{}_vis'.format(name),
                                               images_viz,
                                               global_step=global_step)
+    
+    def summary_fid(self,netG,global_step,dataset,**kwargs):
+        """
+        calculate the fid between generated images and real images
+
+        Args:
+            netG (Module): Generator model object for producing images.
+            global_step (int): Global step variable for syncing logs.
+
+        Returns:
+            None
+        """
+        img_dir = os.path.join(self.log_dir,'fid')
+        if not os.path.exists(img_dir):
+            os.makedirs(img_dir)
+        fid_score_train = compute_fid.fid_score(num_real_samples=50000,
+                                        num_fake_samples=50000,
+                                        netG=netG,
+                                        batch_size=100,
+                                        #data='cifar10',
+                                        split='train',
+                                        device=self.device,
+                                        log_dir=img_dir,
+                                        dataset=dataset,
+                                        
+                                      )
+        fid_score_test = compute_fid.fid_score(num_real_samples=10000,
+                                        num_fake_samples=10000,
+                                        netG=netG,
+                                        batch_size=100,
+                                        #data='cifar10',
+                                        split='val',
+                                        dataset=dataset,
+                                        device=self.device,
+                                        log_dir=img_dir,
+                                        
+                                      )
+        if 'train_Fid' not in self.writers:
+            self.writers['train_Fid'] = self._build_writer('train_Fid')
+        self.writers["train_Fid"].add_scalar("train_Fid",
+                                            fid_score_train,
+                                            global_step=global_step)
+        if 'test_Fid' not in self.writers:
+            self.writers['test_Fid'] = self._build_writer('test_Fid')
+        self.writers["test_Fid"].add_scalar("test_Fid",
+                                            fid_score_test,
+                                            global_step=global_step)
+        
+    
+    def summary_IS(self,netG,global_step,**kwargs):
+        """
+        calculate the fid between generated images and real images
+
+        Args:
+            netG (Module): Generator model object for producing images.
+            global_step (int): Global step variable for syncing logs.
+
+        Returns:
+            None
+        """
+        img_dir = os.path.join(self.log_dir,'IS')
+        if not os.path.exists(img_dir):
+            os.makedirs(img_dir)
+        IS_score,_ = compute_is.inception_score(num_samples=50000,
+                                        netG=netG,
+                                        batch_size=100,
+                                        #data='cifar10',
+                                        device=self.device,
+                                        log_dir=img_dir,
+                                        **kwargs
+                                      )
+        if 'IS' not in self.writers:
+            self.writers['IS'] = self._build_writer('IS')
+        self.writers["IS"].add_scalar("IS",
+                                            IS_score,
+                                            global_step=global_step)
+    
+    def summary_KID(self,netG,global_step,dataset,**kwargs):
+        """
+        calculate the fid between generated images and real images
+
+        Args:
+            netG (Module): Generator model object for producing images.
+            global_step (int): Global step variable for syncing logs.
+
+        Returns:
+            None
+        """
+        img_dir = os.path.join(self.log_dir,'fid')
+        if not os.path.exists(img_dir):
+            os.makedirs(img_dir)
+        kid_score_train,_ = compute_kid.kid_score(num_samples=50000,
+                                        netG=netG,
+                                        batch_size=100,
+                                        split='train',
+                                        #data='cifar10',
+                                        dataset=dataset,
+                                        device=self.device,
+                                        log_dir=img_dir,
+                                        **kwargs
+                                      )
+        kid_score_test,_ = compute_kid.kid_score(num_samples=10000,
+                                        netG=netG,
+                                        batch_size=100,
+                                        split='val',
+                                        #data='cifar10',
+                                        device=self.device,
+                                        dataset=dataset,
+                                        log_dir=img_dir,
+                                        **kwargs
+                                      )
+        if 'train_KID' not in self.writers:
+            self.writers['train_KID'] = self._build_writer('train_KID')
+        self.writers["train_KID"].add_scalar("train_KID",
+                                            kid_score_train,
+                                            global_step=global_step)
+        if 'test_KID' not in self.writers:
+            self.writers['test_KID'] = self._build_writer('test_KID')
+        self.writers["test_KID"].add_scalar("test_KID",
+                                            kid_score_test,
+                                            global_step=global_step)
+     
+     
+     
+     

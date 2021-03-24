@@ -18,6 +18,7 @@ def compute_real_dist_feat(num_samples,
                            sess,
                            dataset,
                            batch_size,
+                           split,
                            seed=0,
                            verbose=True,
                            feat_file=None,
@@ -57,7 +58,7 @@ def compute_real_dist_feat(num_samples,
     else:
         # Obtain the numpy format data
         print("INFO: Obtaining images...")
-        images = get_dataset_images(dataset, num_samples=num_samples)
+        images = get_dataset_images(dataset,split=split, num_samples=num_samples)
 
         # Compute the mean and cov
         print("INFO: Computing features for real images...")
@@ -171,6 +172,7 @@ def kid_score(num_samples,
               dataset,
               seed=0,
               device=None,
+              split='train',
               num_subsets=10,
               batch_size=50,
               verbose=True,
@@ -206,10 +208,12 @@ def kid_score(num_samples,
             'cifar100',
             'stl10_48',
             'imagenet_32',
+            'imagenet_64',
             'imagenet_128',
             'celeba_64',
             'celeba_128',
-            'lsun_bedroom',
+            'lsun_bedroom_128',
+            'Tiny_imagenet_64',
             'fake_data',
         }
         if dataset not in default_datasets:
@@ -258,6 +262,7 @@ def kid_score(num_samples,
         sess.run(tf.compat.v1.global_variables_initializer())
 
         real_feat = compute_real_dist_feat(num_samples=num_samples,
+                                           split=split,
                                            sess=sess,
                                            dataset=dataset,
                                            batch_size=batch_size,

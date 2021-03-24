@@ -7,7 +7,7 @@ import torchvision
 from torchvision import transforms
 
 from torch_mimicry.datasets.imagenet import imagenet
-
+import torch
 
 def load_dataset(root, name, **kwargs):
     """
@@ -29,7 +29,8 @@ def load_dataset(root, name, **kwargs):
 
     elif name == "imagenet_32":
         return load_imagenet_dataset(root, size=32, **kwargs)
-
+    elif name == "imagenet_64":
+        return load_imagenet_dataset(root, size=64, **kwargs)
     elif name == "imagenet_128":
         return load_imagenet_dataset(root, size=128, **kwargs)
 
@@ -43,7 +44,9 @@ def load_dataset(root, name, **kwargs):
         return load_celeba_dataset(root, size=128, **kwargs)
 
     elif name == "lsun_bedroom_128":
-        return load_lsun_bedroom_dataset(root, size=128, **kwargs)
+        return load_lsun_bedroom_dataset(root, size=64, **kwargs)
+    elif name == "Tiny_imagenet_64":
+        return load_tiny_magenet_dataset(root, size=64, **kwargs)
 
     elif name == "fake_data":
         return load_fake_dataset(root, **kwargs)
@@ -94,7 +97,8 @@ def load_fake_dataset(root,
 
 
 def load_lsun_bedroom_dataset(root,
-                              size=128,
+                              size=64,
+                              split='train',
                               transform_data=True,
                               convert_tensor=True,
                               **kwargs):
@@ -118,7 +122,7 @@ def load_lsun_bedroom_dataset(root,
             format(dataset_dir))
 
     if transform_data:
-        transforms_list = [transforms.CenterCrop(256), transforms.Resize(size)]
+        transforms_list = [transforms.Resize(size)]
         if convert_tensor:
             transforms_list += [
                 transforms.ToTensor(),
@@ -129,11 +133,18 @@ def load_lsun_bedroom_dataset(root,
 
     else:
         transform = None
-
-    dataset = torchvision.datasets.LSUN(root=dataset_dir,
-                                        classes=['bedroom_train'],
-                                        transform=transform,
-                                        **kwargs)
+    if split == "train":
+        dataset = torchvision.datasets.ImageFolder(root=dataset_dir+'/bedroom_train_list_all',
+                                                transform=transform,
+                                                **kwargs)
+    elif split == "val":
+        dataset = torchvision.datasets.ImageFolder(root=dataset_dir+'/bedroom_val_list_all',
+                                                transform=transform,
+                                                **kwargs)
+    #dataset = torchvision.datasets.LSUN(root=dataset_dir,
+    #                                   classes=['bedroom_train'],
+    #                                    transform=transform,
+    #                                    **kwargs)
 
     return dataset
 
@@ -142,7 +153,7 @@ def load_celeba_dataset(root,
                         transform_data=True,
                         convert_tensor=True,
                         download=True,
-                        split='all',
+                        split='train',
                         size=64,
                         **kwargs):
     """
@@ -240,7 +251,66 @@ def load_stl10_dataset(root,
                                          **kwargs)
 
     return dataset
+def load_tiny_magenet_dataset(root,
+                          size=64,
+                          split='train',
+                          download=True,
+                          transform_data=True,
+                          convert_tensor=True,
+                          **kwargs):
+    """
+    Loads the ImageNet dataset.
 
+    Args:
+        root (str): Path to where datasets are stored.
+        size (int): Size to resize images to.
+        transform_data (bool): If True, preprocesses data.
+        split (str): The split of data to use.
+        download (bool): If True, downloads the dataset.
+        convert_tensor (bool): If True, converts image to tensor and preprocess 
+            to range [-1, 1].
+
+    Returns:
+        Dataset: Torch Dataset object.   
+    """
+    dataset_dir = os.path.join(root, 'tiny-imagenet-50')
+    if not os.path.exists(dataset_dir):
+        os.makedirs(dataset_dir)
+
+    if transform_data:
+        transforms_list = [transforms.Resize(size)]
+        if convert_tensor:
+            transforms_list += [
+                transforms.ToTensor(),
+                transforms.Normalize((0.5, ), (0.5, ))
+            ]
+
+        transform = transforms.Compose(transforms_list)
+
+    else:
+        transform = None
+    '''
+    dataset = imagenet.ImageNet(root=dataset_dir,
+                                split=split,
+                                transform=transform,
+                                download=download,
+                                **kwargs)
+    '''
+    if split == "train":
+        dataset = torchvision.datasets.ImageFolder(root=dataset_dir+'/train/',
+                                                transform=transform,
+                                                **kwargs)
+        '''
+        test_dataset = torchvision.datasets.ImageFolder(root=dataset_dir+'/test/',
+                                                transform=transform,
+                                                **kwargs)
+        dataset = torch.utils.data.ConcatDataset([train_dataset, test_dataset])
+        '''
+    elif split == "val":
+        dataset = torchvision.datasets.ImageFolder(root=dataset_dir+'/val/',
+                                                transform=transform,
+                                                **kwargs)
+    return dataset
 
 def load_imagenet_dataset(root,
                           size=32,
@@ -280,13 +350,22 @@ def load_imagenet_dataset(root,
 
     else:
         transform = None
-
+    '''
     dataset = imagenet.ImageNet(root=dataset_dir,
                                 split=split,
                                 transform=transform,
                                 download=download,
                                 **kwargs)
+    '''
+    if split == "train":
+        dataset = torchvision.datasets.ImageFolder(root=dataset_dir+'/train/',
+                                                transform=transform,
+                                                **kwargs)
 
+    elif split == "val":
+        dataset = torchvision.datasets.ImageFolder(root=dataset_dir+'/val/',
+                                                transform=transform,
+                                                **kwargs)
     return dataset
 
 
@@ -350,7 +429,7 @@ def load_cifar100_dataset(root,
                                                 download=download,
                                                 **kwargs)
 
-    elif split == "test":
+    elif split == "val":
         dataset = torchvision.datasets.CIFAR100(root=dataset_dir,
                                                 train=False,
                                                 transform=transform,
@@ -417,7 +496,7 @@ def load_cifar10_dataset(root,
                                                download=download,
                                                **kwargs)
 
-    elif split == "test":
+    elif split == "val":
         dataset = torchvision.datasets.CIFAR10(root=dataset_dir,
                                                train=False,
                                                transform=transform,

@@ -115,34 +115,9 @@ def get_fake_data_images(num_samples, root='./datasets', size=32, **kwargs):
     return images
 
 
-def get_lsun_bedroom_images(num_samples,
-                            root='./datasets',
-                            size=128,
-                            **kwargs):
-    """
-    Loads randomly sampled LSUN-Bedroom training images.
-
-    Args:
-        num_samples (int): The number of images to randomly sample.
-        root (str): The root directory where all datasets are stored.
-        size (int): Size of image to resize to.
-
-    Returns:
-        ndarray: Batch of num_samples images in np array form.
-    """
-    dataset = data_utils.load_lsun_bedroom_dataset(
-        root=root,
-        size=size,
-        transform_data=True,
-        convert_tensor=False,  # Prevents normalization.
-        **kwargs)
-
-    images = get_random_images(dataset, num_samples)
-
-    return images
 
 
-def get_celeba_images(num_samples, root='./datasets', size=128, **kwargs):
+def get_celeba_images(num_samples, root='./datasets', split='train',size=128, **kwargs):
     """
     Loads randomly sampled CelebA images.
 
@@ -157,6 +132,7 @@ def get_celeba_images(num_samples, root='./datasets', size=128, **kwargs):
     dataset = data_utils.load_celeba_dataset(
         root=root,
         size=size,
+        split=split,
         transform_data=True,
         convert_tensor=False,  # Prevents normalization.
         **kwargs)
@@ -166,7 +142,7 @@ def get_celeba_images(num_samples, root='./datasets', size=128, **kwargs):
     return images
 
 
-def get_stl10_images(num_samples, root='./datasets', size=48, **kwargs):
+def get_stl10_images(num_samples,split='unlabeled', root='./datasets',size=48, **kwargs):
     """
     Loads randomly sampled STL-10 images.
 
@@ -181,6 +157,7 @@ def get_stl10_images(num_samples, root='./datasets', size=48, **kwargs):
     dataset = data_utils.load_stl10_dataset(
         root=root,
         size=size,
+        split=split,
         transform_data=True,
         convert_tensor=False,  # Prevents normalization.
         **kwargs)
@@ -190,7 +167,7 @@ def get_stl10_images(num_samples, root='./datasets', size=48, **kwargs):
     return images
 
 
-def get_cifar10_images(num_samples, root="./datasets", **kwargs):
+def get_cifar10_images(num_samples, split='train',root="./datasets", **kwargs):
     """
     Loads randomly sampled CIFAR-10 training images.
 
@@ -203,6 +180,7 @@ def get_cifar10_images(num_samples, root="./datasets", **kwargs):
     """
     dataset = data_utils.load_cifar10_dataset(root=root,
                                               transform_data=False,
+                                              split=split,
                                               **kwargs)
 
     images = get_random_images(dataset, num_samples)
@@ -266,9 +244,58 @@ def sample_dataset_images(dataset, num_samples):
     images = np.concatenate(images, axis=0)
 
     return images
+def get_lsun_bedroom_images(num_samples,
+                            root='/data/lzq/data',
+                            size=64,
+                            split='train',
+                            **kwargs):
+    """
+    Loads randomly sampled LSUN-Bedroom training images.
 
+    Args:
+        num_samples (int): The number of images to randomly sample.
+        root (str): The root directory where all datasets are stored.
+        size (int): Size of image to resize to.
 
-def get_dataset_images(dataset, num_samples=50000, **kwargs):
+    Returns:
+        ndarray: Batch of num_samples images in np array form.
+    """
+    dataset = data_utils.load_lsun_bedroom_dataset(
+        root=root,
+        size=size,
+        split=split,
+        transform_data=True,
+        convert_tensor=False,  # Prevents normalization.
+        **kwargs)
+
+    images = get_random_images(dataset, num_samples)
+
+    return images
+def get_tiny_imagenet_images(num_samples, root='/data/lzq/data', split='train',size=64, **kwargs):
+    """
+    Loads randomly sampled CelebA images.
+
+    Args:
+        num_samples (int): The number of images to randomly sample.
+        root (str): The root directory where all datasets are stored.
+        size (int): Size of image to resize to.
+
+    Returns:
+        ndarray: Batch of num_samples images in np array form.
+    """
+    dataset = data_utils.load_tiny_magenet_dataset(
+        root=root,
+        size=size,
+        split=split,
+        transform_data=True,
+        convert_tensor=False,  # Prevents normalization.
+        **kwargs)
+
+    images = get_random_images(dataset, num_samples)
+
+    return images
+
+def get_dataset_images(dataset, num_samples=50000, split='train',**kwargs):
     """
     Randomly sample num_samples images based on input dataset name.
 
@@ -283,27 +310,31 @@ def get_dataset_images(dataset, num_samples=50000, **kwargs):
     if isinstance(dataset, str):
         if dataset == "imagenet_32":
             images = get_imagenet_images(num_samples, size=32, **kwargs)
+        elif dataset == "imagenet_64":
+            images = get_imagenet_images(num_samples, size=64, **kwargs)
 
         elif dataset == "imagenet_128":
             images = get_imagenet_images(num_samples, size=128, **kwargs)
 
         elif dataset == "celeba_64":
-            images = get_celeba_images(num_samples, size=64, **kwargs)
+            images = get_celeba_images(num_samples, split=split,size=64, **kwargs)
 
         elif dataset == "celeba_128":
             images = get_celeba_images(num_samples, size=128, **kwargs)
 
         elif dataset == "stl10_48":
-            images = get_stl10_images(num_samples, **kwargs)
+            images = get_stl10_images(num_samples, split=split,**kwargs)
 
         elif dataset == "cifar10":
-            images = get_cifar10_images(num_samples, **kwargs)
+            images = get_cifar10_images(num_samples,split=split, **kwargs)
 
         elif dataset == "cifar100":
             images = get_cifar100_images(num_samples, **kwargs)
 
         elif dataset == "lsun_bedroom_128":
             images = get_lsun_bedroom_images(num_samples, size=128, **kwargs)
+        elif dataset == "Tiny_imagenet_64":
+            images = get_tiny_imagenet_images(num_samples, size=64, **kwargs)
 
         elif dataset == "fake_data":
             images = get_fake_data_images(num_samples, size=32, **kwargs)

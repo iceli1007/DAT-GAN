@@ -12,8 +12,9 @@ class BaseModel(nn.Module, ABC):
     r"""
     BaseModel with basic functionalities for checkpointing and restoration.
     """
-    def __init__(self):
+    def __init__(self, scaler=None):
         super().__init__()
+        self.scaler = scaler
 
     @abstractmethod
     def forward(self, x):

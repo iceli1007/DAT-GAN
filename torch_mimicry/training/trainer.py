@@ -9,7 +9,7 @@ import torch
 
 from torch_mimicry.training import scheduler, logger, metric_log
 from torch_mimicry.utils import common
-
+import numpy as np
 
 class Trainer:
     """
@@ -48,6 +48,7 @@ class Trainer:
                  n_dis=1,
                  lr_decay=None,
                  device=None,
+                 dataset='cifar10',
                  netG_ckpt_file=None,
                  netD_ckpt_file=None,
                  print_steps=1,
@@ -80,6 +81,7 @@ class Trainer:
         self.num_steps = num_steps
         self.device = device
         self.log_dir = log_dir
+        self.dataset=dataset
         self.netG_ckpt_file = netG_ckpt_file
         self.netD_ckpt_file = netD_ckpt_file
         self.print_steps = print_steps
@@ -266,14 +268,31 @@ class Trainer:
                 #   One Training Step
                 # -------------------------
                 # Update n_dis times for D
+
+                #R=np.random.randint(18,22,1)
+
+
+                
                 for i in range(self.n_dis):
                     iter_dataloader, real_batch = self._fetch_data(
                         iter_dataloader=iter_dataloader)
 
+
                     # ------------------------
                     #   Update D Network
                     # -----------------------
+                    '''
+                    normal training
                     log_data = self.netD.train_step(real_batch=real_batch,
+                                                    netG=self.netG,
+                                                    optD=self.optD,
+                                                    log_data=log_data,
+                                                    global_step=global_step,
+                                                    #radius=R,
+                                                    device=self.device)
+                    '''
+                    #DAT
+                    log_data = self.netD.advtrain_step(real_batch=real_batch,
                                                     netG=self.netG,
                                                     optD=self.optD,
                                                     log_data=log_data,
@@ -291,6 +310,7 @@ class Trainer:
                             optG=self.optG,
                             global_step=global_step,
                             log_data=log_data,
+                            #radius=R,
                             device=self.device)
 
                 # --------------------------------
@@ -319,7 +339,16 @@ class Trainer:
                 if global_step % self.vis_steps == 0:
                     self.logger.vis_images(netG=self.netG,
                                            global_step=global_step)
-
+                                 
+                    self.logger.summary_fid(netG=self.netG,
+                                            dataset=self.dataset,
+                                           global_step=global_step)
+                    self.logger.summary_IS(netG=self.netG,
+                                          global_step=global_step)
+                    self.logger.summary_KID(netG=self.netG,
+                                            dataset=self.dataset,
+                                           global_step=global_step)
+                    
                 if global_step % self.save_steps == 0:
                     print("INFO: Saving checkpoints...")
                     self._save_model_checkpoints(global_step)
